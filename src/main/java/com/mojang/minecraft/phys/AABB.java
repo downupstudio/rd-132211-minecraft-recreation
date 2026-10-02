@@ -1,8 +1,5 @@
 package com.mojang.minecraft.phys;
 
-/**
- * Axis-aligned bounding box used for player / tile collision.
- */
 public class AABB {
 
     private final double epsilon = 0.0F;
