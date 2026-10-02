@@ -1,0 +1,11 @@
+target/
+.idea/
+*.iml
+*.class
+level.dat
+.classpath
+.project
+.settings/
+run/
+*.log
+launcher/*.exe

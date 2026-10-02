@@ -1,0 +1,75 @@
+package com.mojang.minecraft;
+
+import org.lwjgl.BufferUtils;
+
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+
+import static org.lwjgl.opengl.GL11.GL_RGBA;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_MAG_FILTER;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_MIN_FILTER;
+import static org.lwjgl.opengl.GL11.GL_UNSIGNED_BYTE;
+import static org.lwjgl.opengl.GL11.glBindTexture;
+import static org.lwjgl.opengl.GL11.glGenTextures;
+import static org.lwjgl.opengl.GL11.glTexParameteri;
+import static org.lwjgl.util.glu.GLU.gluBuild2DMipmaps;
+
+public class Textures {
+
+    private static int lastId = Integer.MIN_VALUE;
+
+    public static int loadTexture(String resourceName, int mode) {
+        int id = glGenTextures();
+        bind(id);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, mode);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, mode);
+
+        InputStream inputStream = Textures.class.getResourceAsStream(resourceName);
+        if (inputStream == null) {
+            throw new RuntimeException("Missing texture resource: " + resourceName);
+        }
+
+        try {
+            BufferedImage bufferedImage = ImageIO.read(inputStream);
+            int width = bufferedImage.getWidth();
+            int height = bufferedImage.getHeight();
+
+            int[] pixels = new int[width * height];
+            bufferedImage.getRGB(0, 0, width, height, pixels, 0, width);
+
+            for (int i = 0; i < pixels.length; i++) {
+                int alpha = pixels[i] >> 24 & 0xFF;
+                int red = pixels[i] >> 16 & 0xFF;
+                int green = pixels[i] >> 8 & 0xFF;
+                int blue = pixels[i] & 0xFF;
+                pixels[i] = alpha << 24 | blue << 16 | green << 8 | red;
+            }
+
+            ByteBuffer byteBuffer = BufferUtils.createByteBuffer(width * height * 4);
+            byteBuffer.asIntBuffer().put(pixels);
+
+            gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGBA, width, height, GL_RGBA, GL_UNSIGNED_BYTE, byteBuffer);
+        } catch (IOException exception) {
+            throw new RuntimeException("Could not load texture " + resourceName, exception);
+        } finally {
+            try {
+                inputStream.close();
+            } catch (IOException ignored) {
+            }
+        }
+
+        return id;
+    }
+
+    public static void bind(int id) {
+        if (id != lastId) {
+            glBindTexture(GL_TEXTURE_2D, id);
+            lastId = id;
+        }
+    }
+}
